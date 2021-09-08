@@ -1,46 +1,78 @@
 #pragma once
 
 #include "cinder/Color.h"
-#include "cinder/Vector.h"
 
-enum ShapeType { CIRCLE, SQUARE, RECTANGLE };
+enum shape_type { BASE, CIRCLE, SQUARE, RECTANGLE };
 
-class Shape
+class shape
 {
 public:
 	cinder::vec2 location;
 	cinder::Color color;
-	ShapeType type;
+	shape_type type;
+
+	shape()
+		: type(BASE)
+	{
+	}
+	
+	explicit shape(const shape_type shape_type)
+		: type(shape_type)
+	{
+	}
 };
 
-class Circle : public Shape
+class circle : public shape
 {
 public:
 	float radius;
 
-	inline bool isInside(const cinder::vec2& pos)
+	circle() :
+		shape(CIRCLE),
+		radius(0.0f)
+	{
+	}
+	
+	bool is_inside(const cinder::vec2& pos) const
 	{
 		const cinder::vec2 v = pos - location;
 		return v.x * v.x + v.y * v.y <= radius * radius;
 	}
 };
 
-class MovingCircle : public Circle
+class moving_circle : public circle
 {
 public:
 	cinder::vec2 direction;
 	float velocity;
+
+	moving_circle() :
+		direction{0.0f, 0.0f},
+		velocity(0.0f)
+	{
+	}
 };
 
-class Square : public Shape
+class square : public shape
 {
 public:
 	float side;
+
+	explicit square() :
+		shape(SQUARE),
+		side(0.0f)
+	{
+	}
 };
 
-class Rectangle : public Shape
+class rectangle : public shape
 {
 public:
-	float width;
-	float height;
+	ci::vec2 size;
+
+	rectangle() :
+		shape(RECTANGLE),
+		size{0.0f, 0.0f}
+	{
+	}
 };

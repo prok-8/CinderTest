@@ -107,6 +107,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Resources.h" />
+    <ClInclude Include="..\src\MenuDrawing.h" />
+    <ClInclude Include="..\src\PropertyGroup.h" />
     <ClInclude Include="..\src\Shape.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

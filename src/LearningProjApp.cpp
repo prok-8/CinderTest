@@ -2,60 +2,89 @@
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
 #include "cinder/Rand.h"
+#include "cinder/CinderImGui.h"
+
 #include "Shape.h"
+#include "PropertyGroup.h"
 
 using namespace ci;
-using namespace ci::app;
+using namespace app;
 
-class LearningProjApp : public App {
+class learning_proj_app final : public App {
 public:
-	LearningProjApp();
+	learning_proj_app();
 	void mouseDown(MouseEvent event) override;
 	void keyDown(KeyEvent event) override;
 	void draw() override;
+	void setup() override;
+	void update() override;
 
 private:
-	std::list<MovingCircle> mCircles;
-	MovingCircle mDummyCircle;
-	MovingCircle* mLastCircle;
+	std::list<moving_circle> m_circles_;
+	moving_circle m_dummy_circle_;
+	moving_circle* m_last_circle_;
+
+	circle m_circle_;
+	circle_property_group m_circle_prop_;
+	square m_square_;
+	square_property_group m_square_prop_;
+	rectangle m_rectangle_;
+	rectangle_property_group m_rectangle_prop_;
+	
+	std::array<property_group*, 3> m_property_groups_;
+	int m_selected_shape_index_;
 };
 
-void prepareSettings(LearningProjApp::Settings* settings)
+void prepare_settings(learning_proj_app::Settings* settings)
 {
 	settings->setMultiTouchEnabled(false);
 }
 
-void LearningProjApp::mouseDown(MouseEvent event)
+learning_proj_app::learning_proj_app()
+	:m_last_circle_(&m_dummy_circle_),
+	m_circle_prop_(&m_circle_),
+	m_square_prop_(&m_square_),
+	m_rectangle_prop_(&m_rectangle_),
+	m_property_groups_{
+		&m_circle_prop_,
+		&m_square_prop_,
+		&m_rectangle_prop_,
+},
+m_selected_shape_index_(-1)
+{
+}
+
+void learning_proj_app::mouseDown(const MouseEvent event)
 {
 	if (event.isLeft()) {
-		MovingCircle c;
+		moving_circle c;
 		c.location = event.getPos();
 		c.radius = randFloat(4.0f, 32.0f);
 		c.color = Color(randFloat(), randFloat(), randFloat());
 		c.direction = randVec2();
 		c.velocity = randFloat(2.0f, 8.0f);
-		mCircles.push_back(c);
-		auto endItr = mCircles.end();
-		--endItr;
-		mLastCircle = &*endItr;
+		m_circles_.push_back(c);
+		auto end_itr = m_circles_.end();
+		--end_itr;
+		m_last_circle_ = &*end_itr;
 	}
 	else if (event.isRight())
 	{
-		auto itr = mCircles.end();
-		while (itr != mCircles.begin()) {
+		auto itr = m_circles_.end();
+		while (itr != m_circles_.begin()) {
 			--itr;
-			if (itr->isInside(event.getPos()))
+			if (itr->is_inside(event.getPos()))
 			{
-				mCircles.erase(itr);
-				if (mCircles.empty())
+				m_circles_.erase(itr);
+				if (m_circles_.empty())
 				{
-					mLastCircle = &mDummyCircle;
+					m_last_circle_ = &m_dummy_circle_;
 				}
 				else
 				{
-					itr = mCircles.end();
+					itr = m_circles_.end();
 					--itr;
-					mLastCircle = &*itr;
+					m_last_circle_ = &*itr;
 				}
 				break;
 			}
@@ -63,22 +92,15 @@ void LearningProjApp::mouseDown(MouseEvent event)
 	}
 }
 
-LearningProjApp::LearningProjApp()
-	:mLastCircle(&mDummyCircle)
+void learning_proj_app::keyDown(const KeyEvent event)
 {
-}
-
-void LearningProjApp::keyDown(KeyEvent event)
-{
-	const int eventCode = event.getCode();
-
-	switch (eventCode)
+	switch (event.getCode())
 	{
 	case KeyEvent::KEY_f:
 		setFullScreen(!isFullScreen());
 		break;
 	case KeyEvent::KEY_SPACE:
-		mCircles.clear();
+		m_circles_.clear();
 		break;
 	case KeyEvent::KEY_ESCAPE:
 		if (isFullScreen())
@@ -87,56 +109,86 @@ void LearningProjApp::keyDown(KeyEvent event)
 			quit();
 		break;
 	case KeyEvent::KEY_w:
-		mLastCircle->location.y -= 4.0f;
+		m_last_circle_->location.y -= 4.0f;
 		break;
 	case KeyEvent::KEY_s:
-		mLastCircle->location.y += 4.0f;
+		m_last_circle_->location.y += 4.0f;
 		break;
 	case KeyEvent::KEY_a:
-		mLastCircle->location.x -= 4.0f;
+		m_last_circle_->location.x -= 4.0f;
 		break;
 	case KeyEvent::KEY_d:
-		mLastCircle->location.x += 4.0f;
+		m_last_circle_->location.x += 4.0f;
+		break;
+	default:
 		break;
 	}
 }
 
-void LearningProjApp::draw()
+void learning_proj_app::draw()
 {
 	gl::clear(Color::gray(0.1f));
 
-	for (MovingCircle& c : mCircles) {
+	for (moving_circle& c : m_circles_) {
 		gl::color(c.color);
 		gl::drawSolidCircle(c.location, c.radius);
 
 
-		vec2 moveVec = c.direction * c.velocity;
+		vec2 move_vec = c.direction * c.velocity;
 		float ratio;
 
 		// Adjust movement vector to prevent clipping outside of screen.
-		float clip = moveVec.x > 0.0f
-			? c.location.x + moveVec.x + c.radius - getWindowSize().x
-			: (c.location.x + moveVec.x - c.radius) * -1;
+		float clip = move_vec.x > 0.0f
+			? c.location.x + move_vec.x + c.radius - getWindowSize().x
+			: (c.location.x + move_vec.x - c.radius) * -1;
 		if (clip >= 0.0f)
 		{
-			ratio = 1.0f - clip / moveVec.x;
-			moveVec *= ratio;
+			ratio = 1.0f - clip / move_vec.x;
+			move_vec *= ratio;
 			c.direction.x *= -1;
 		}
 
-		clip = moveVec.y > 0.0f
-			? clip = c.location.y + moveVec.y + c.radius - getWindowSize().y
-			: (c.location.y + moveVec.y - c.radius) * -1;
+		clip = move_vec.y > 0.0f
+			? clip = c.location.y + move_vec.y + c.radius - getWindowSize().y
+			: (c.location.y + move_vec.y - c.radius) * -1;
 		if (clip >= 0.0f)
 		{
-			ratio = 1.0f - clip / moveVec.y;
-			moveVec *= ratio;
+			ratio = 1.0f - clip / move_vec.y;
+			move_vec *= ratio;
 			c.direction.y *= -1;
 		}
 
-		c.location += moveVec;
+		c.location += move_vec;
 	}
 }
 
+void learning_proj_app::setup()
+{
+	ImGui::Initialize();
+}
+
+void learning_proj_app::update()
+{
+	ImGui::Begin("List");
+	ImGui::ListBox(
+		"",
+		&m_selected_shape_index_,
+		[](void* data, const int idx, const char** out_text)
+		{			
+			*out_text = static_cast<property_group**>(data)[idx]->name;
+			return true;
+		},
+		m_property_groups_.data(),
+		m_property_groups_.size());
+	ImGui::End();
+
+	ImGui::Begin("Properties");
+	if (m_selected_shape_index_ >= 0) {
+		m_property_groups_[m_selected_shape_index_]->draw();
+	}
+	ImGui::End();
+}
+
+
 // This line tells Cinder to actually create and run the application.
-CINDER_APP(LearningProjApp, RendererGl, prepareSettings)
+CINDER_APP(learning_proj_app, RendererGl, prepare_settings)
