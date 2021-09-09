@@ -210,10 +210,21 @@ void learning_proj_app::update()
 
 void learning_proj_app::write_shapes_json()
 {
-	FILE* file = fopen("output.json", "wb");
+	const char* file_name = "output.json";
+	const char* bkp_file_name = "output.json.bkp";
+	
+	if (std::filesystem::exists(file_name))
+	{
+		if(std::filesystem::exists(bkp_file_name))
+			remove(bkp_file_name);
+		rename(file_name, bkp_file_name);
+	}
+
+	FILE* file = fopen(file_name, "wb");
 	char buffer[1024];
 	FileWriteStream stream(file, buffer, sizeof(buffer));
 	PrettyWriter<FileWriteStream> writer(stream);
+	
 	writer.StartObject();
 	writer.String("circle");
 	serialize<circle>(m_circle_, writer);
@@ -222,6 +233,7 @@ void learning_proj_app::write_shapes_json()
 	writer.String("rectangle");
 	serialize<rectangle>(m_rectangle_, writer);
 	writer.EndObject();
+	
 	fclose(file);
 }
 

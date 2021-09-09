@@ -1,3 +1,5 @@
 vc2019/.vs
 vc2019/x64
 assets
+vc2019/output.json
+vc2019/output.json.bkp
