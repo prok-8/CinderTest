@@ -104,6 +104,7 @@
   <ItemGroup />
   <ItemGroup>
     <ClCompile Include="..\src\LearningProjApp.cpp" />
+    <ClCompile Include="..\src\WindowUserData.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Resources.h" />

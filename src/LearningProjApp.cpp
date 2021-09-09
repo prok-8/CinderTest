@@ -13,6 +13,7 @@
 #include "PropertyGroup.h"
 #include "Serialization.h"
 #include "Deserialization.h"
+#include "WindowUserData.h"
 
 using namespace ci;
 using namespace app;
@@ -27,6 +28,7 @@ public:
 	void draw() override;
 	void setup() override;
 	void update() override;
+	void fileDrop(FileDropEvent event) override;
 
 private:
 	const char* m_dialog_message_;
@@ -45,8 +47,12 @@ private:
 	std::array<property_group*, 3> m_property_groups_;
 	int m_selected_shape_index_;
 
+	std::vector<std::string> _m_harmonica_images_;
+
 	void write_shapes_json();
 	config_load_status read_shapes_json();
+	void draw_main();
+	void draw_harmonica();
 };
 
 void prepare_settings(learning_proj_app::Settings* settings)
@@ -142,44 +148,25 @@ void learning_proj_app::keyDown(const KeyEvent event)
 
 void learning_proj_app::draw()
 {
-	gl::clear(Color::gray(0.1f));
-
-	for (moving_circle& c : m_circles_) {
-		gl::color(c.color);
-		gl::drawSolidCircle(c.location, c.radius);
-
-
-		vec2 move_vec = c.direction * c.velocity;
-		float ratio;
-
-		// Adjust movement vector to prevent clipping outside of screen.
-		float clip = move_vec.x > 0.0f
-			? c.location.x + move_vec.x + c.radius - getWindowSize().x
-			: (c.location.x + move_vec.x - c.radius) * -1;
-		if (clip >= 0.0f)
-		{
-			ratio = 1.0f - clip / move_vec.x;
-			move_vec *= ratio;
-			c.direction.x *= -1;
-		}
-
-		clip = move_vec.y > 0.0f
-			? clip = c.location.y + move_vec.y + c.radius - getWindowSize().y
-			: (c.location.y + move_vec.y - c.radius) * -1;
-		if (clip >= 0.0f)
-		{
-			ratio = 1.0f - clip / move_vec.y;
-			move_vec *= ratio;
-			c.direction.y *= -1;
-		}
-
-		c.location += move_vec;
+	switch(getWindow()->getUserData<window_user_data>()->kind)
+	{
+	case MAIN:
+		draw_main();
+		break;
+	case HARMONICA:
+		draw_harmonica();
+		break;
 	}
 }
 
 void learning_proj_app::setup()
 {
 	ImGui::Initialize();
+
+	getWindow()->setUserData<window_user_data>(new window_user_data{ MAIN });
+	
+	const WindowRef new_window = createWindow(Window::Format());
+	new_window->setUserData(new window_user_data{ HARMONICA });
 }
 
 void learning_proj_app::update()
@@ -235,6 +222,18 @@ void learning_proj_app::update()
 		if (ImGui::Button("Close"))
 			m_dialog_message_ = nullptr;
 		ImGui::End();
+	}
+}
+
+void learning_proj_app::fileDrop(FileDropEvent event)
+{
+	switch(getWindow()->getUserData<window_user_data>()->kind)
+	{
+	case MAIN:
+		break;
+	case HARMONICA:
+		_m_harmonica_images_.push_back(event.getFile(0).string());
+		break;
 	}
 }
 
@@ -302,6 +301,49 @@ config_load_status learning_proj_app::read_shapes_json()
 	fclose(file);
 	return SUCCESS;
 }
+
+void learning_proj_app::draw_main()
+{
+	gl::clear(Color::gray(0.1f));
+
+	for (moving_circle& c : m_circles_) {
+		gl::color(c.color);
+		gl::drawSolidCircle(c.location, c.radius);
+
+
+		vec2 move_vec = c.direction * c.velocity;
+		float ratio;
+
+		// Adjust movement vector to prevent clipping outside of screen.
+		float clip = move_vec.x > 0.0f
+			? c.location.x + move_vec.x + c.radius - getWindowSize().x
+			: (c.location.x + move_vec.x - c.radius) * -1;
+		if (clip >= 0.0f)
+		{
+			ratio = 1.0f - clip / move_vec.x;
+			move_vec *= ratio;
+			c.direction.x *= -1;
+		}
+
+		clip = move_vec.y > 0.0f
+			? clip = c.location.y + move_vec.y + c.radius - getWindowSize().y
+			: (c.location.y + move_vec.y - c.radius) * -1;
+		if (clip >= 0.0f)
+		{
+			ratio = 1.0f - clip / move_vec.y;
+			move_vec *= ratio;
+			c.direction.y *= -1;
+		}
+
+		c.location += move_vec;
+	}
+}
+
+void learning_proj_app::draw_harmonica()
+{
+	gl::clear(Color::gray(0.1f));
+}
+
 
 // This line tells Cinder to actually create and run the application.
 CINDER_APP(learning_proj_app, RendererGl, prepare_settings)
