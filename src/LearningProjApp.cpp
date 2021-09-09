@@ -1,11 +1,15 @@
+#include <string>
 #include "cinder/app/App.h"
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
 #include "cinder/Rand.h"
 #include "cinder/CinderImGui.h"
+#include "rapidjson.h"
+#include "filewritestream.h"
 
 #include "Shape.h"
 #include "PropertyGroup.h"
+#include "Serialization.h"
 
 using namespace ci;
 using namespace app;
@@ -33,6 +37,8 @@ private:
 	
 	std::array<property_group*, 3> m_property_groups_;
 	int m_selected_shape_index_;
+
+	void write_shapes_json();
 };
 
 void prepare_settings(learning_proj_app::Settings* settings)
@@ -169,6 +175,19 @@ void learning_proj_app::setup()
 
 void learning_proj_app::update()
 {
+	if (ImGui::BeginMainMenuBar()) {
+		if (ImGui::BeginMenu("File")) {
+			if(ImGui::MenuItem("Save", nullptr))
+			{
+				write_shapes_json();
+			}
+			
+			ImGui::MenuItem("Open");
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
+	
 	ImGui::Begin("List");
 	ImGui::ListBox(
 		"",
@@ -189,6 +208,22 @@ void learning_proj_app::update()
 	ImGui::End();
 }
 
+void learning_proj_app::write_shapes_json()
+{
+	FILE* file = fopen("output.json", "wb");
+	char buffer[1024];
+	FileWriteStream stream(file, buffer, sizeof(buffer));
+	PrettyWriter<FileWriteStream> writer(stream);
+	writer.StartObject();
+	writer.String("circle");
+	serialize<circle>(m_circle_, writer);
+	writer.String("square");
+	serialize<square>(m_square_, writer);
+	writer.String("rectangle");
+	serialize<rectangle>(m_rectangle_, writer);
+	writer.EndObject();
+	fclose(file);
+}
 
 // This line tells Cinder to actually create and run the application.
 CINDER_APP(learning_proj_app, RendererGl, prepare_settings)
