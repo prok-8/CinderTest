@@ -2,7 +2,7 @@
 
 #include "cinder/Color.h"
 
-enum shape_type { BASE, CIRCLE, SQUARE, RECTANGLE };
+enum shape_type { BASE = 0, CIRCLE = 1, SQUARE = 2, RECTANGLE = 3 };
 
 class shape
 {

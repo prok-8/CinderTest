@@ -4,15 +4,20 @@
 #include "cinder/gl/gl.h"
 #include "cinder/Rand.h"
 #include "cinder/CinderImGui.h"
+
 #include "rapidjson.h"
 #include "filewritestream.h"
+#include "filereadstream.h"
 
 #include "Shape.h"
 #include "PropertyGroup.h"
 #include "Serialization.h"
+#include "Deserialization.h"
 
 using namespace ci;
 using namespace app;
+
+enum config_load_status { SUCCESS = 0, MISSING_FILE, DESERIALIZATION_ERROR };
 
 class learning_proj_app final : public App {
 public:
@@ -24,6 +29,8 @@ public:
 	void update() override;
 
 private:
+	const char* m_dialog_message_;
+	
 	std::list<moving_circle> m_circles_;
 	moving_circle m_dummy_circle_;
 	moving_circle* m_last_circle_;
@@ -39,6 +46,7 @@ private:
 	int m_selected_shape_index_;
 
 	void write_shapes_json();
+	config_load_status read_shapes_json();
 };
 
 void prepare_settings(learning_proj_app::Settings* settings)
@@ -46,8 +54,9 @@ void prepare_settings(learning_proj_app::Settings* settings)
 	settings->setMultiTouchEnabled(false);
 }
 
-learning_proj_app::learning_proj_app()
-	:m_last_circle_(&m_dummy_circle_),
+learning_proj_app::learning_proj_app() :
+	m_dialog_message_(nullptr),
+	m_last_circle_(&m_dummy_circle_),
 	m_circle_prop_(&m_circle_),
 	m_square_prop_(&m_square_),
 	m_rectangle_prop_(&m_rectangle_),
@@ -55,8 +64,8 @@ learning_proj_app::learning_proj_app()
 		&m_circle_prop_,
 		&m_square_prop_,
 		&m_rectangle_prop_,
-},
-m_selected_shape_index_(-1)
+	},
+	m_selected_shape_index_(-1)
 {
 }
 
@@ -177,12 +186,24 @@ void learning_proj_app::update()
 {
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
-			if(ImGui::MenuItem("Save", nullptr))
+			if(ImGui::MenuItem("Save"))
 			{
 				write_shapes_json();
 			}
 			
-			ImGui::MenuItem("Open");
+			if(ImGui::MenuItem("Open"))
+			{
+				switch(read_shapes_json())
+				{
+				case MISSING_FILE:
+					m_dialog_message_ = "Load failed! Missing configuration file.";
+					break;
+				case DESERIALIZATION_ERROR:
+					m_dialog_message_ = "Load failed! Json parsing error.";
+					break;
+				}
+			}
+			
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
@@ -206,6 +227,15 @@ void learning_proj_app::update()
 		m_property_groups_[m_selected_shape_index_]->draw();
 	}
 	ImGui::End();
+
+	if(m_dialog_message_ != nullptr)
+	{
+		ImGui::Begin("Alert");
+		ImGui::Text(m_dialog_message_);
+		if (ImGui::Button("Close"))
+			m_dialog_message_ = nullptr;
+		ImGui::End();
+	}
 }
 
 void learning_proj_app::write_shapes_json()
@@ -235,6 +265,42 @@ void learning_proj_app::write_shapes_json()
 	writer.EndObject();
 	
 	fclose(file);
+}
+
+config_load_status learning_proj_app::read_shapes_json()
+{
+	const char* file_name = "output.json";
+
+	FILE* file;
+	if (!(file = fopen(file_name, "rb"))) {
+		return MISSING_FILE;
+	}
+
+	circle circle_bkp = m_circle_;
+	square square_bkp = m_square_;
+	rectangle rectangle_bkp = m_rectangle_;
+	
+	m_circle_ = circle();
+	m_square_ = square();
+	m_rectangle_ = rectangle();
+	
+	char buffer[1024];
+	FileReadStream stream(file, buffer, sizeof(buffer));
+
+	Document doc;
+	doc.ParseStream(stream);
+	if (doc.HasParseError())
+	{
+		fclose(file);
+		return DESERIALIZATION_ERROR;
+	}
+	
+	deserialize_object<circle>(m_circle_, doc, "circle");
+	deserialize_object<square>(m_square_, doc, "square");
+	deserialize_object<rectangle>(m_rectangle_, doc, "rectangle");
+
+	fclose(file);
+	return SUCCESS;
 }
 
 // This line tells Cinder to actually create and run the application.

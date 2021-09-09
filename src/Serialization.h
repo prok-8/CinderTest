@@ -43,7 +43,7 @@ inline void serialize<shape>(shape& object, Writer<FileWriteStream>& writer, con
 	if (!omit_object_start)
 		writer.StartObject();
 	writer.String("type");
-	writer.String("CIRCLE");
+	writer.Int(object.type);
 	writer.String("location");
 	serialize<ci::vec2>(object.location, writer);
 	writer.String("color");
