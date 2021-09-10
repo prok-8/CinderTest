@@ -45,7 +45,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\include;..\..\..\include;..\..\..\blocks\rapidjson</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;..\..\..\include;..\..\..\blocks</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0601;_WINDOWS;NOMINMAX;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -70,7 +70,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\include;..\..\..\include;..\..\..\blocks\rapidjson</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;..\..\..\include;..\..\..\blocks</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0601;_WINDOWS;NOMINMAX;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
@@ -104,15 +104,15 @@
   <ItemGroup />
   <ItemGroup>
     <ClCompile Include="..\src\LearningProjApp.cpp" />
-    <ClCompile Include="..\src\WindowUserData.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\Deserialization.h" />
+    <ClInclude Include="..\include\MenuDrawing.h" />
+    <ClInclude Include="..\include\PropertyGroup.h" />
     <ClInclude Include="..\include\Resources.h" />
-    <ClInclude Include="..\src\Deserialization.h" />
-    <ClInclude Include="..\src\MenuDrawing.h" />
-    <ClInclude Include="..\src\PropertyGroup.h" />
-    <ClInclude Include="..\src\Serialization.h" />
-    <ClInclude Include="..\src\Shape.h" />
+    <ClInclude Include="..\include\Serialization.h" />
+    <ClInclude Include="..\include\Shape.h" />
+    <ClInclude Include="..\include\WindowUserData.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

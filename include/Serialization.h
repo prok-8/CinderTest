@@ -2,7 +2,7 @@
 
 #include "cinder/Color.h"
 #include "cinder/ChanTraits.h"
-#include "prettywriter.h"
+#include "rapidjson/prettywriter.h"
 #include "Shape.h"
 
 using namespace rapidjson;

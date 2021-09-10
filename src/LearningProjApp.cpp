@@ -5,9 +5,9 @@
 #include "cinder/Rand.h"
 #include "cinder/CinderImGui.h"
 
-#include "rapidjson.h"
-#include "filewritestream.h"
-#include "filereadstream.h"
+#include "rapidjson/rapidjson.h"
+#include "rapidjson/filewritestream.h"
+#include "rapidjson/filereadstream.h"
 
 #include "Shape.h"
 #include "PropertyGroup.h"

@@ -23,27 +23,27 @@
     <ClInclude Include="..\include\Resources.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClCompile Include="..\src\WindowUserData.h">
-      <Filter>Header Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Resources.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Shape.h">
+    <ClInclude Include="..\include\Deserialization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MenuDrawing.h">
+    <ClInclude Include="..\include\MenuDrawing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\PropertyGroup.h">
+    <ClInclude Include="..\include\PropertyGroup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Serialization.h">
+    <ClInclude Include="..\include\Serialization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Deserialization.h">
+    <ClInclude Include="..\include\Shape.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\WindowUserData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
