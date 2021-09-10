@@ -15,8 +15,12 @@
 #include "Deserialization.h"
 #include "WindowUserData.h"
 
+#include "cinder/ImageIo.h"
+
 using namespace ci;
 using namespace app;
+
+const vec2 harmonica_buffer_size = vec2(640, 480);
 
 enum config_load_status { SUCCESS = 0, MISSING_FILE, DESERIALIZATION_ERROR };
 
@@ -49,11 +53,13 @@ private:
 
 	std::vector<std::string> m_harmonica_images_;
 	std::vector<gl::Texture2dRef> m_harmonica_textures_;
+	gl::FboRef m_harmonica_fb_;
 
 	void write_shapes_json();
 	config_load_status read_shapes_json();
 	void draw_main();
 	void draw_harmonica();
+	void update_harmonica();
 };
 
 void prepare_settings(learning_proj_app::Settings* settings)
@@ -168,6 +174,8 @@ void learning_proj_app::setup()
 	
 	const WindowRef new_window = createWindow(Window::Format());
 	new_window->setUserData(new window_user_data{ HARMONICA });
+
+	m_harmonica_fb_ = gl::Fbo::create(harmonica_buffer_size.x, harmonica_buffer_size.y);
 }
 
 void learning_proj_app::update()
@@ -236,6 +244,7 @@ void learning_proj_app::fileDrop(FileDropEvent event)
 		std::string file_name = event.getFile(0).string();
 		m_harmonica_images_.push_back(file_name);
 		m_harmonica_textures_.push_back(gl::Texture::create(loadImage(file_name)));
+		update_harmonica();
 		break;
 	}
 }
@@ -345,18 +354,31 @@ void learning_proj_app::draw_main()
 
 void learning_proj_app::draw_harmonica()
 {
-	gl::clear(Color::gray(0.1f));
-	if (m_harmonica_textures_.size() == 0)
-		return;
-	
-	const float segment_width = getWindowWidth() / m_harmonica_textures_.size();
-	Rectf segment_rect = Rectf(vec2(), vec2(segment_width, getWindowHeight()));
-	
-	for(int i = 0; i < m_harmonica_images_.size(); i++)
-	{
-		gl::draw(m_harmonica_textures_[i], segment_rect);
-		segment_rect.offset(vec2(segment_width, 0.0f));
+	if (m_harmonica_fb_) {
+		const Rectf render_rect = Rectf(vec2(0.0f, 0.0f), harmonica_buffer_size).getCenteredFit(getWindowBounds(), true);
+		gl::draw(m_harmonica_fb_->getColorTexture(), render_rect);
 	}
+}
+
+void learning_proj_app::update_harmonica()
+{
+	m_harmonica_fb_->bindFramebuffer();
+	if (m_harmonica_textures_.size() == 0)
+	{
+		gl::clear(Color::gray(0.1f));
+	}
+	else {		
+		const float segment_width = harmonica_buffer_size.x / m_harmonica_textures_.size();
+		Rectf segment_rect = Rectf(0.0f, getWindowHeight() - harmonica_buffer_size.y, segment_width, getWindowHeight());
+		
+		for (int i = 0; i < m_harmonica_images_.size(); i++)
+		{
+			gl::draw(m_harmonica_textures_[i], segment_rect);
+			segment_rect.offset(vec2(segment_width, 0.0f));
+		}
+	}
+	
+	m_harmonica_fb_->unbindFramebuffer();
 }
 
 // This line tells Cinder to actually create and run the application.
