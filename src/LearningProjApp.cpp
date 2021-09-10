@@ -47,7 +47,8 @@ private:
 	std::array<property_group*, 3> m_property_groups_;
 	int m_selected_shape_index_;
 
-	std::vector<std::string> _m_harmonica_images_;
+	std::vector<std::string> m_harmonica_images_;
+	std::vector<gl::Texture2dRef> m_harmonica_textures_;
 
 	void write_shapes_json();
 	config_load_status read_shapes_json();
@@ -232,7 +233,9 @@ void learning_proj_app::fileDrop(FileDropEvent event)
 	case MAIN:
 		break;
 	case HARMONICA:
-		_m_harmonica_images_.push_back(event.getFile(0).string());
+		std::string file_name = event.getFile(0).string();
+		m_harmonica_images_.push_back(file_name);
+		m_harmonica_textures_.push_back(gl::Texture::create(loadImage(file_name)));
 		break;
 	}
 }
@@ -305,7 +308,8 @@ config_load_status learning_proj_app::read_shapes_json()
 void learning_proj_app::draw_main()
 {
 	gl::clear(Color::gray(0.1f));
-
+	gl::clear(Color::gray(0.1f));
+	
 	for (moving_circle& c : m_circles_) {
 		gl::color(c.color);
 		gl::drawSolidCircle(c.location, c.radius);
@@ -342,8 +346,18 @@ void learning_proj_app::draw_main()
 void learning_proj_app::draw_harmonica()
 {
 	gl::clear(Color::gray(0.1f));
+	if (m_harmonica_textures_.size() == 0)
+		return;
+	
+	const float segment_width = getWindowWidth() / m_harmonica_textures_.size();
+	Rectf segment_rect = Rectf(vec2(), vec2(segment_width, getWindowHeight()));
+	
+	for(int i = 0; i < m_harmonica_images_.size(); i++)
+	{
+		gl::draw(m_harmonica_textures_[i], segment_rect);
+		segment_rect.offset(vec2(segment_width, 0.0f));
+	}
 }
-
 
 // This line tells Cinder to actually create and run the application.
 CINDER_APP(learning_proj_app, RendererGl, prepare_settings)
