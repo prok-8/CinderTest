@@ -14,6 +14,7 @@
 #include "Serialization.h"
 #include "Deserialization.h"
 #include "WindowUserData.h"
+#include "ExtendedCheckbox.h"
 
 #include "cinder/ImageIo.h"
 
@@ -60,6 +61,10 @@ private:
 	void draw_main();
 	void draw_harmonica();
 	void update_harmonica();
+
+
+
+	bool m_test_bool_;
 };
 
 void prepare_settings(learning_proj_app::Settings* settings)
@@ -78,7 +83,8 @@ learning_proj_app::learning_proj_app() :
 		&m_square_prop_,
 		&m_rectangle_prop_,
 	},
-	m_selected_shape_index_(-1)
+	m_selected_shape_index_(-1),
+	m_test_bool_(false)
 {
 }
 
@@ -232,6 +238,12 @@ void learning_proj_app::update()
 			m_dialog_message_ = nullptr;
 		ImGui::End();
 	}
+
+
+	ImGui::Begin("Test");
+	ImGui::Checkbox("abc", &m_test_bool_);
+	ImGui::ExtendedCheckbox("extended", &m_test_bool_);
+	ImGui::End();
 }
 
 void learning_proj_app::fileDrop(FileDropEvent event)

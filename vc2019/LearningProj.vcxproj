@@ -103,6 +103,7 @@
   <ItemGroup />
   <ItemGroup />
   <ItemGroup>
+    <ClCompile Include="..\src\ExtendedCheckbox.cpp" />
     <ClCompile Include="..\src\LearningProjApp.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -113,6 +114,7 @@
     <ClInclude Include="..\include\Serialization.h" />
     <ClInclude Include="..\include\Shape.h" />
     <ClInclude Include="..\include\WindowUserData.h" />
+    <ClInclude Include="..\src\ExtendedCheckbox.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
