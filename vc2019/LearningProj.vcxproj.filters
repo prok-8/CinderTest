@@ -20,9 +20,6 @@
     <ClCompile Include="..\src\LearningProjApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClInclude Include="..\include\Resources.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClCompile Include="..\src\ExtendedCheckbox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -31,28 +28,25 @@
     <ClInclude Include="..\include\Resources.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Deserialization.h">
+    <ClInclude Include="..\src\ColorInterp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\MenuDrawing.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\PropertyGroup.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Serialization.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Shape.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\WindowUserData.h">
+    <ClInclude Include="..\src\Deserialization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ExtendedCheckbox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ColorInterp.h">
+    <ClInclude Include="..\src\MenuDrawing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\PropertyGroup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Serialization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Shape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

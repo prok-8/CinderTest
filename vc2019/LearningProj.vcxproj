@@ -100,22 +100,19 @@
   <ItemGroup>
     <ResourceCompile Include="Resources.rc" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ClInclude Include="..\src\ColorInterp.h" />
+    <ClInclude Include="..\src\Deserialization.h" />
+    <ClInclude Include="..\src\ExtendedCheckbox.h" />
+    <ClInclude Include="..\src\MenuDrawing.h" />
+    <ClInclude Include="..\src\PropertyGroup.h" />
+    <ClInclude Include="..\src\Serialization.h" />
+    <ClInclude Include="..\src\Shape.h" />
+  </ItemGroup>
   <ItemGroup />
   <ItemGroup>
     <ClCompile Include="..\src\ExtendedCheckbox.cpp" />
     <ClCompile Include="..\src\LearningProjApp.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\include\Deserialization.h" />
-    <ClInclude Include="..\include\MenuDrawing.h" />
-    <ClInclude Include="..\include\PropertyGroup.h" />
-    <ClInclude Include="..\include\Resources.h" />
-    <ClInclude Include="..\include\Serialization.h" />
-    <ClInclude Include="..\include\Shape.h" />
-    <ClInclude Include="..\include\WindowUserData.h" />
-    <ClInclude Include="..\src\ColorInterp.h" />
-    <ClInclude Include="..\src\ExtendedCheckbox.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
