@@ -114,6 +114,7 @@
     <ClInclude Include="..\include\Serialization.h" />
     <ClInclude Include="..\include\Shape.h" />
     <ClInclude Include="..\include\WindowUserData.h" />
+    <ClInclude Include="..\src\ColorInterp.h" />
     <ClInclude Include="..\src\ExtendedCheckbox.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

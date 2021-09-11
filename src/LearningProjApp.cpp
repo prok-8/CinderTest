@@ -65,6 +65,7 @@ private:
 
 
 	bool m_test_bool_;
+	ImGui::ExtendedCheckbox m_test_cb_;
 };
 
 void prepare_settings(learning_proj_app::Settings* settings)
@@ -84,7 +85,8 @@ learning_proj_app::learning_proj_app() :
 		&m_rectangle_prop_,
 	},
 	m_selected_shape_index_(-1),
-	m_test_bool_(false)
+	m_test_bool_(false),
+	m_test_cb_("test 123", &timeline())
 {
 }
 
@@ -104,6 +106,7 @@ void learning_proj_app::mouseDown(const MouseEvent event)
 	}
 	else if (event.isRight())
 	{
+		std::stringstream somtn;
 		auto itr = m_circles_.end();
 		while (itr != m_circles_.begin()) {
 			--itr;
@@ -239,10 +242,9 @@ void learning_proj_app::update()
 		ImGui::End();
 	}
 
-
 	ImGui::Begin("Test");
 	ImGui::Checkbox("abc", &m_test_bool_);
-	ImGui::ExtendedCheckbox("extended", &m_test_bool_);
+	m_test_cb_.Draw();
 	ImGui::End();
 }
 
