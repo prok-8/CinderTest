@@ -4,6 +4,7 @@
 #include "cinder/gl/gl.h"
 #include "cinder/Rand.h"
 #include "cinder/CinderImGui.h"
+#include "cinder/Text.h"
 
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/filewritestream.h"
@@ -61,6 +62,8 @@ private:
 	void draw_main();
 	void draw_harmonica();
 	void update_harmonica();
+	void draw_shape_property_menus();
+	void draw_harmonica_menus();
 };
 
 void prepare_settings(learning_proj_app::Settings* settings)
@@ -85,6 +88,9 @@ learning_proj_app::learning_proj_app() :
 
 void learning_proj_app::mouseDown(const MouseEvent event)
 {
+	if (getWindow()->getUserData<window_user_data>()->kind != MAIN)
+		return;
+
 	if (event.isLeft()) {
 		moving_circle c;
 		c.location = event.getPos();
@@ -124,6 +130,9 @@ void learning_proj_app::mouseDown(const MouseEvent event)
 
 void learning_proj_app::keyDown(const KeyEvent event)
 {
+	if (getWindow()->getUserData<window_user_data>()->kind != MAIN)
+		return;
+	
 	switch (event.getCode())
 	{
 	case KeyEvent::KEY_f:
@@ -178,20 +187,27 @@ void learning_proj_app::setup()
 	new_window->setUserData(new window_user_data{ HARMONICA });
 
 	m_harmonica_fb_ = gl::Fbo::create(harmonica_buffer_size.x, harmonica_buffer_size.y);
+	update_harmonica();
 }
 
 void learning_proj_app::update()
 {
+	draw_shape_property_menus();
+	draw_harmonica_menus();
+}
+
+void learning_proj_app::draw_shape_property_menus()
+{
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
-			if(ImGui::MenuItem("Save"))
+			if (ImGui::MenuItem("Save"))
 			{
 				write_shapes_json();
 			}
-			
-			if(ImGui::MenuItem("Open"))
+
+			if (ImGui::MenuItem("Open"))
 			{
-				switch(read_shapes_json())
+				switch (read_shapes_json())
 				{
 				case MISSING_FILE:
 					m_dialog_message_ = "Load failed! Missing configuration file.";
@@ -201,23 +217,23 @@ void learning_proj_app::update()
 					break;
 				}
 			}
-			
+
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
 	}
-	
+
 	ImGui::Begin("List");
 	ImGui::ListBox(
 		"",
 		&m_selected_shape_index_,
 		[](void* data, const int idx, const char** out_text)
-		{			
+		{
 			*out_text = static_cast<shape_property_group**>(data)[idx]->name;
 			return true;
 		},
 		m_property_groups_.data(),
-		m_property_groups_.size());
+			m_property_groups_.size());
 	ImGui::End();
 
 	ImGui::Begin("Properties");
@@ -226,7 +242,7 @@ void learning_proj_app::update()
 	}
 	ImGui::End();
 
-	if(m_dialog_message_ != nullptr)
+	if (m_dialog_message_ != nullptr)
 	{
 		ImGui::Begin("Alert");
 		ImGui::Text(m_dialog_message_);
@@ -235,6 +251,35 @@ void learning_proj_app::update()
 		ImGui::End();
 	}
 }
+
+void learning_proj_app::draw_harmonica_menus()
+{
+	ImGui::Begin("Harmonica");
+	
+	
+	if (ImGui::BeginTable("Images", 3))
+	{
+		ImGui::TableSetupColumn("Image", ImGuiTableColumnFlags_WidthFixed, 64);
+		ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 128);
+		ImGui::TableSetupColumn("Col3", 0);
+		ImGui::TableHeadersRow();
+
+		for (int i = 0; i < m_harmonica_images_.size(); i++)
+		{
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::Image(m_harmonica_textures_[i], vec2(64, 64));
+			ImGui::TableNextColumn();
+			ImGui::Text(m_harmonica_images_[i].c_str());
+			ImGui::TableNextColumn();
+			ImGui::Text("Tint");
+		}
+		ImGui::EndTable();
+	}
+
+	ImGui::End();
+}
+
 
 void learning_proj_app::fileDrop(FileDropEvent event)
 {
@@ -365,13 +410,19 @@ void learning_proj_app::draw_harmonica()
 void learning_proj_app::update_harmonica()
 {
 	m_harmonica_fb_->bindFramebuffer();
+	const vec2 window_size = getWindowSize();
 	if (m_harmonica_textures_.size() == 0)
 	{
+		gl::setMatricesWindow(window_size);
 		gl::clear(Color::gray(0.1f));
+		TextBox text = TextBox().text("[ DROP IMAGES HERE ]").color(Color::white()).font(Font("Calibri", 50)).size(1000, 1000);
+		const vec2 text_bb = text.measure();
+		const vec2 text_loc((window_size.x - text_bb.x) / 2, (window_size.y - text_bb.y) / 2);
+		gl::draw(gl::Texture2d::create(text.render()), text_loc);
 	}
 	else {		
 		const float segment_width = harmonica_buffer_size.x / m_harmonica_textures_.size();
-		Rectf segment_rect = Rectf(0.0f, getWindowHeight() - harmonica_buffer_size.y, segment_width, getWindowHeight());
+		Rectf segment_rect = Rectf(0.0f, window_size.y - harmonica_buffer_size.y, segment_width, window_size.y);
 		
 		for (int i = 0; i < m_harmonica_images_.size(); i++)
 		{
