@@ -2,7 +2,7 @@
 
 #include "cinder/Color.h"
 
-enum shape_type { BASE = 0, CIRCLE = 1, SQUARE = 2, RECTANGLE = 3 };
+enum shape_type : uint8_t { BASE = 0, CIRCLE = 1, SQUARE = 2, RECTANGLE = 3 };
 
 class shape
 {
@@ -10,14 +10,17 @@ public:
 	cinder::vec2 location;
 	cinder::Color color;
 	shape_type type;
+	bool rogue;
 
-	shape()
-		: type(BASE)
+	shape() :
+		type(BASE),
+		rogue(false)
 	{
 	}
 	
-	explicit shape(const shape_type shape_type)
-		: type(shape_type)
+	explicit shape(const shape_type shape_type) :
+		type(shape_type),
+		rogue(false)
 	{
 	}
 };

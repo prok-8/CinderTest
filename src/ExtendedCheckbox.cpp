@@ -11,10 +11,10 @@
 
 #include "imgui/imgui_internal.h"
 
-ImGui::ExtendedCheckbox::ExtendedCheckbox(const char* label, cinder::Timeline* timeline) :
+ImGui::ExtendedCheckbox::ExtendedCheckbox(const char* label, bool* b, cinder::Timeline* timeline) :
 	label_(label),
-	state_(false),
-	transitioning_(false),
+	checked_(b),
+	prev_checked_(false),
 	timeline_(timeline),
     knob_position_(0.0f),
 	knob_color_(cinder::Color8u(255, 0, 0))
@@ -44,23 +44,26 @@ bool ImGui::ExtendedCheckbox::Draw()
 
     bool hovered, held;
     const bool pressed = ButtonBehavior(total_bb, id, &hovered, &held);
-    if (pressed)
+	if(pressed)
+	{
+        *checked_ = !*checked_;
+	}
+	
+    if (pressed || *checked_ != prev_checked_)
     {
-    	if(state_)
+    	if(*checked_)
     	{
-            state_ = false;
-            timeline_->apply(&knob_position_, 0.0f, transition_time_, cinder::EaseOutBack(3.0f));
-            timeline_->apply(&knob_color_, cinder::Color8u(255, 0, 0), transition_time_, cinder::EaseOutQuad(), Color8uInterp());
+            timeline_->apply(&knob_position_, square_sz, transition_time_, cinder::EaseOutBack(3.0f));
+            timeline_->apply(&knob_color_, cinder::Color8u(0, 255, 0), transition_time_, cinder::EaseOutQuad(), Color8uInterp());
     	}
     	else
         {
-            state_ = true;
-            timeline_->apply(&knob_position_, square_sz, transition_time_, cinder::EaseOutBack(3.0f));
-            timeline_->apply(&knob_color_, cinder::Color8u(0, 255, 0), transition_time_, cinder::EaseOutQuad(), Color8uInterp());
+            timeline_->apply(&knob_position_, 0.0f, transition_time_, cinder::EaseOutBack(3.0f));
+            timeline_->apply(&knob_color_, cinder::Color8u(255, 0, 0), transition_time_, cinder::EaseOutQuad(), Color8uInterp());
         }
     	
-        transitioning_ = true;
         MarkItemEdited(id);
+        prev_checked_ = *checked_;
     }
 
     const ImU32 knob_color_value = 0xff000000 | knob_color_.value().b << 16 | knob_color_.value().g << 8 | knob_color_.value().r;
@@ -75,7 +78,6 @@ bool ImGui::ExtendedCheckbox::Draw()
     if (label_size.x > 0.0f)
         RenderText(label_pos, label_);
 	
-
     IMGUI_TEST_ENGINE_ITEM_INFO(id, label, g.LastItemData.StatusFlags | ImGuiItemStatusFlags_Checkable | (*v ? ImGuiItemStatusFlags_Checked : 0));
     return pressed;
 }

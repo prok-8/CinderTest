@@ -47,7 +47,9 @@ inline void deserialize<shape>(shape& target, Value& value)
 	if (value.HasMember("color") && value["color"].IsString())
 		deserialize<ci::Color>(target.color, value["color"]);
 	if (value.HasMember("type") && value["type"].IsInt())
-		NULL;  // TODO
+		target.type = static_cast<shape_type>(value["type"].GetInt());
+	if (value.HasMember("rogue") && value["rogue"].IsBool())
+		target.rogue = value["rogue"].GetBool();
 }
 
 template<>

@@ -31,8 +31,8 @@ inline void serialize<ci::vec2>(ci::vec2& object, Writer<FileWriteStream>& write
 		writer.StartObject();
 	writer.String("x");
 	writer.Double(object.x);
-	writer.String("Y");
-	writer.Double(object.y);
+	writer.String("y");
+	writer.Double(object.y);	
 	if (!omit_object_start)
 		writer.EndObject();
 }
@@ -48,6 +48,8 @@ inline void serialize<shape>(shape& object, Writer<FileWriteStream>& writer, con
 	serialize<ci::vec2>(object.location, writer);
 	writer.String("color");
 	writer.String(color_to_hex(object.color).c_str());
+	writer.String("rogue");
+	writer.Bool(object.rogue);
 	if (!omit_object_start)
 		writer.EndObject();
 }

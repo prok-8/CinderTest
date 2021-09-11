@@ -37,16 +37,13 @@
     <ClInclude Include="..\src\ExtendedCheckbox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MenuDrawing.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\PropertyGroup.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\Serialization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\Shape.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ShapePropertyGroup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

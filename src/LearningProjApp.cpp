@@ -10,7 +10,7 @@
 #include "rapidjson/filereadstream.h"
 
 #include "Shape.h"
-#include "PropertyGroup.h"
+#include "ShapePropertyGroup.h"
 #include "Serialization.h"
 #include "Deserialization.h"
 #include "WindowUserData.h"
@@ -49,7 +49,7 @@ private:
 	rectangle m_rectangle_;
 	rectangle_property_group m_rectangle_prop_;
 	
-	std::array<property_group*, 3> m_property_groups_;
+	std::array<shape_property_group*, 3> m_property_groups_;
 	int m_selected_shape_index_;
 
 	std::vector<std::string> m_harmonica_images_;
@@ -61,11 +61,6 @@ private:
 	void draw_main();
 	void draw_harmonica();
 	void update_harmonica();
-
-
-
-	bool m_test_bool_;
-	ImGui::ExtendedCheckbox m_test_cb_;
 };
 
 void prepare_settings(learning_proj_app::Settings* settings)
@@ -76,17 +71,15 @@ void prepare_settings(learning_proj_app::Settings* settings)
 learning_proj_app::learning_proj_app() :
 	m_dialog_message_(nullptr),
 	m_last_circle_(&m_dummy_circle_),
-	m_circle_prop_(&m_circle_),
-	m_square_prop_(&m_square_),
-	m_rectangle_prop_(&m_rectangle_),
+	m_circle_prop_(&m_circle_, &timeline()),
+	m_square_prop_(&m_square_, &timeline()),
+	m_rectangle_prop_(&m_rectangle_, &timeline()),
 	m_property_groups_{
 		&m_circle_prop_,
 		&m_square_prop_,
 		&m_rectangle_prop_,
 	},
-	m_selected_shape_index_(-1),
-	m_test_bool_(false),
-	m_test_cb_("test 123", &timeline())
+	m_selected_shape_index_(-1)
 {
 }
 
@@ -220,7 +213,7 @@ void learning_proj_app::update()
 		&m_selected_shape_index_,
 		[](void* data, const int idx, const char** out_text)
 		{			
-			*out_text = static_cast<property_group**>(data)[idx]->name;
+			*out_text = static_cast<shape_property_group**>(data)[idx]->name;
 			return true;
 		},
 		m_property_groups_.data(),
@@ -241,11 +234,6 @@ void learning_proj_app::update()
 			m_dialog_message_ = nullptr;
 		ImGui::End();
 	}
-
-	ImGui::Begin("Test");
-	ImGui::Checkbox("abc", &m_test_bool_);
-	m_test_cb_.Draw();
-	ImGui::End();
 }
 
 void learning_proj_app::fileDrop(FileDropEvent event)
