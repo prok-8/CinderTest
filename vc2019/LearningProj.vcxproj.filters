@@ -49,6 +49,9 @@
     <ClInclude Include="..\src\ShaderMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\HarmonicaSegmentGroup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources.rc">

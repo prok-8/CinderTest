@@ -17,6 +17,7 @@
 #include "WindowUserData.h"
 #include "ExtendedCheckbox.h"
 #include "ShaderMap.h"
+#include "HarmonicaSegmentGroup.h"
 
 #include "cinder/ImageIo.h"
 
@@ -56,10 +57,7 @@ private:
 	std::array<shape_property_group*, 3> m_property_groups_;
 	int m_selected_shape_index_;
 
-	std::vector<std::string> m_harmonica_images_;
-	std::vector<gl::Texture2dRef> m_harmonica_textures_;
-	std::vector<Color> m_harmonica_color_muls_;
-	std::vector<bool> m_harmonica_color_mul_changes_;
+	std::vector<harmonica_segment_group> m_harmonica_segments_;
 	bool m_harmonica_schedule_recalc;
 	bool m_harmonica_recalc_updated_colors_only;
 	gl::FboRef m_harmonica_fb_;
@@ -285,21 +283,21 @@ void learning_proj_app::draw_harmonica_menus()
 			ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthStretch);
 			ImGui::TableHeadersRow();
 
-			for (int i = 0; i < m_harmonica_images_.size(); i++) {
+			for (int i = 0; i < m_harmonica_segments_.size(); i++) {
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
-				ImGui::Image(m_harmonica_textures_[i], vec2(64, 64));
+				ImGui::Image(m_harmonica_segments_[i].texture, vec2(64, 64));
 				ImGui::TableNextColumn();
 				if (ImGui::ColorPicker3(
 					"MulColor" + i,
-					&m_harmonica_color_muls_[i],
+					&m_harmonica_segments_[i].color_mul,
 					ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoSmallPreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel))
 				{
-					m_harmonica_color_mul_changes_[i] = true;
+					m_harmonica_segments_[i].color_mul_changed = true;
 					color_muls_changed = true;
 				}
 				ImGui::TableNextColumn();
-				ImGui::Text(m_harmonica_images_[i].c_str());
+				ImGui::Text(m_harmonica_segments_[i].file_name.c_str());
 			}
 			ImGui::EndTable();
 
@@ -320,10 +318,7 @@ void learning_proj_app::fileDrop(FileDropEvent event)
 		break;
 	case HARMONICA:
 		const std::string file_name = event.getFile(0).string();
-		m_harmonica_images_.push_back(file_name);
-		m_harmonica_textures_.push_back(gl::Texture::create(loadImage(file_name)));
-		m_harmonica_color_muls_.push_back(Color::white());
-		m_harmonica_color_mul_changes_.push_back(false);
+		m_harmonica_segments_.push_back(harmonica_segment_group{ file_name.c_str(), gl::Texture::create(loadImage(file_name)), Color::white(), false });
 		recalc_harmonica(false);
 		break;
 	}
@@ -449,7 +444,7 @@ void learning_proj_app::recalc_harmonica(bool update_colors_only)
 {
 	m_harmonica_fb_->bindFramebuffer();
 	const vec2 window_size = getWindowSize();
-	if (m_harmonica_textures_.size() == 0) {
+	if (m_harmonica_segments_.size() == 0) {
 		gl::setMatricesWindow(window_size);
 		gl::clear(Color::gray(0.1f));
 		TextBox text = TextBox().text("[ DROP IMAGES HERE ]").color(Color::white()).font(Font("Calibri", 50)).size(1000, 1000);
@@ -463,16 +458,16 @@ void learning_proj_app::recalc_harmonica(bool update_colors_only)
 		m_shader_color_mul_->uniform("uWindowOrigin", vec2(getWindowPos()));
 		m_shader_color_mul_->uniform("uWindowSize", vec2(getWindowSize()));
 
-		const float segment_width = harmonica_buffer_size.x / m_harmonica_textures_.size();
-		for (int i = 0; i < m_harmonica_images_.size(); i++) {
-			if (update_colors_only && !m_harmonica_color_mul_changes_[i])
+		const float segment_width = harmonica_buffer_size.x / m_harmonica_segments_.size();
+		for (int i = 0; i < m_harmonica_segments_.size(); i++) {
+			if (update_colors_only && !m_harmonica_segments_[i].color_mul_changed)
 				continue;
 
 			Rectf segment_rect(segment_width * i, window_size.y - harmonica_buffer_size.y, segment_width * (i + 1), window_size.y);
-			m_shader_color_mul_->uniform("colorMul", ColorA(m_harmonica_color_muls_[i], 1.0f));
-			m_harmonica_textures_[i]->bind(0);
+			m_shader_color_mul_->uniform("colorMul", ColorA(m_harmonica_segments_[i].color_mul, 1.0f));
+			m_harmonica_segments_[i].texture->bind(0);
 			gl::drawSolidRect(segment_rect);
-			m_harmonica_color_mul_changes_[i] = false;
+			m_harmonica_segments_[i].color_mul_changed = false;
 		}
 	}
 	
