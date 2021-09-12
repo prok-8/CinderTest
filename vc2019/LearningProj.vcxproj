@@ -104,6 +104,7 @@
     <ClInclude Include="..\src\ColorInterp.h" />
     <ClInclude Include="..\src\Deserialization.h" />
     <ClInclude Include="..\src\ExtendedCheckbox.h" />
+    <ClInclude Include="..\src\ShaderMap.h" />
     <ClInclude Include="..\src\ShapePropertyGroup.h" />
     <ClInclude Include="..\src\Serialization.h" />
     <ClInclude Include="..\src\Shape.h" />

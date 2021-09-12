@@ -16,6 +16,7 @@
 #include "Deserialization.h"
 #include "WindowUserData.h"
 #include "ExtendedCheckbox.h"
+#include "ShaderMap.h"
 
 #include "cinder/ImageIo.h"
 
@@ -38,6 +39,8 @@ public:
 
 private:
 	const char* m_dialog_message_;
+
+	gl::GlslProgRef m_shader_color_mul_;
 	
 	std::list<moving_circle> m_circles_;
 	moving_circle m_dummy_circle_;
@@ -188,6 +191,15 @@ void learning_proj_app::setup()
 
 	m_harmonica_fb_ = gl::Fbo::create(harmonica_buffer_size.x, harmonica_buffer_size.y);
 	update_harmonica();
+
+	try
+	{
+		m_shader_color_mul_ = gl::GlslProg::create(loadAsset(shdr::color_mul_vert), loadAsset(shdr::color_mul_frag));
+	}
+	catch (const std::exception& ex)
+	{
+		quit();
+	}
 }
 
 void learning_proj_app::update()
@@ -420,13 +432,20 @@ void learning_proj_app::update_harmonica()
 		const vec2 text_loc((window_size.x - text_bb.x) / 2, (window_size.y - text_bb.y) / 2);
 		gl::draw(gl::Texture2d::create(text.render()), text_loc);
 	}
-	else {		
+	else {
+		m_shader_color_mul_->bind();
+		m_shader_color_mul_->uniform("uTex0", 0);
+		m_shader_color_mul_->uniform("uWindowOrigin", vec2(getWindowPos()));
+		m_shader_color_mul_->uniform("uWindowSize", vec2(getWindowSize()));
+		m_shader_color_mul_->uniform("colorMul", vec4(1.0f, 0.5f, 0.0f, 1.0f));
+		
 		const float segment_width = harmonica_buffer_size.x / m_harmonica_textures_.size();
 		Rectf segment_rect = Rectf(0.0f, window_size.y - harmonica_buffer_size.y, segment_width, window_size.y);
 		
 		for (int i = 0; i < m_harmonica_images_.size(); i++)
 		{
-			gl::draw(m_harmonica_textures_[i], segment_rect);
+			m_harmonica_textures_[i]->bind(0);
+			gl::drawSolidRect(segment_rect);
 			segment_rect.offset(vec2(segment_width, 0.0f));
 		}
 	}
