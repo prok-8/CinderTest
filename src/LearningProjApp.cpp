@@ -77,6 +77,7 @@ private:
 	void schedule_harmonica_recalc(bool update_colors_only);
 	void draw_shape_property_menus();
 	void draw_harmonica_menus();
+	void export_harmonica_image();
 };
 
 void prepare_settings(learning_proj_app::Settings* settings)
@@ -224,9 +225,7 @@ void learning_proj_app::draw_shape_property_menus()
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Save"))
-			{
 				write_shapes_json();
-			}
 
 			if (ImGui::MenuItem("Open"))
 			{
@@ -243,6 +242,14 @@ void learning_proj_app::draw_shape_property_menus()
 
 			ImGui::EndMenu();
 		}
+
+		if (ImGui::BeginMenu("Image")) {
+			if (ImGui::MenuItem("Export Image"))
+				export_harmonica_image();
+
+			ImGui::EndMenu();
+		}
+		
 		ImGui::EndMainMenuBar();
 	}
 
@@ -530,6 +537,17 @@ void learning_proj_app::schedule_harmonica_recalc(const bool update_colors_only)
 	m_harmonica_schedule_recalc_ = true;
 	m_harmonica_recalc_updated_colors_only_ = update_colors_only;
 }
+
+void learning_proj_app::export_harmonica_image()
+{
+	if (!m_harmonica_fb_)
+		return;
+	
+	const fs::path file_name = getSaveFilePath(fs::path(), { ".png" });
+	if (!file_name.empty())
+		writeImage(file_name, m_harmonica_fb_->getColorTexture()->createSource());
+}
+
 
 // This line tells Cinder to actually create and run the application.
 CINDER_APP(learning_proj_app, RendererGl, prepare_settings)
