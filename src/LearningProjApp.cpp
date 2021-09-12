@@ -43,12 +43,16 @@ public:
 private:
 	const char* m_dialog_message_;
 
+	// Shaders
 	gl::GlslProgRef m_shader_color_mul_;
-	
+	gl::GlslProgRef m_shader_channel_greyscale_;
+
+	// Bouncing circles
 	std::list<moving_circle> m_circles_;
 	moving_circle m_dummy_circle_;
 	moving_circle* m_last_circle_;
 
+	// Shapes
 	circle m_circle_;
 	circle_property_group m_circle_prop_;
 	square m_square_;
@@ -59,6 +63,7 @@ private:
 	std::array<shape_property_group*, 3> m_property_groups_;
 	int m_selected_shape_index_;
 
+	// Harmonica
 	std::vector<harmonica_segment_group> m_harmonica_segments_;
 	bool m_harmonica_schedule_recalc_;
 	bool m_harmonica_recalc_updated_colors_only_;
@@ -200,6 +205,7 @@ void learning_proj_app::setup()
 	try
 	{
 		m_shader_color_mul_ = gl::GlslProg::create(loadAsset(shdr::color_mul_vert), loadAsset(shdr::color_mul_frag));
+		m_shader_channel_greyscale_ = gl::GlslProg::create(loadAsset(shdr::channel_greyscale_vert), loadAsset(shdr::channel_greyscale_frag));
 	}
 	catch (const std::exception& ex)
 	{
@@ -281,27 +287,47 @@ void learning_proj_app::draw_harmonica_menus()
 {
 	bool color_muls_changed = false;
 	if (ImGui::Begin("Harmonica")) {
-		if (ImGui::BeginTable("Images", 3)) {
+		if (ImGui::BeginTable("Images", 4)) {
 			ImGui::TableSetupColumn("Image", ImGuiTableColumnFlags_WidthFixed, 64);
 			ImGui::TableSetupColumn("Color", ImGuiTableColumnFlags_WidthFixed, 136);
+			ImGui::TableSetupColumn("Channels", ImGuiTableColumnFlags_WidthFixed, 48);
 			ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthStretch);
 			ImGui::TableHeadersRow();
 
 			for (int i = 0; i < m_harmonica_segments_.size(); i++) {
+				ImGui::PushID(i);
 				ImGui::TableNextRow();
+
+				// Image
 				ImGui::TableNextColumn();
 				ImGui::Image(m_harmonica_segments_[i].texture, vec2(64, 64));
+
+				// Color multiplier
 				ImGui::TableNextColumn();
 				if (ImGui::ColorPicker4(
-					"MulColor" + i,
+					"MulColor",
 					&m_harmonica_segments_[i].color_mul,
 					ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoSmallPreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoAlpha))
 				{
 					m_harmonica_segments_[i].color_mul_changed = true;
 					color_muls_changed = true;
 				}
+
+				// Channels
+				ImGui::TableNextColumn();
+				if (ImGui::Checkbox("R", &m_harmonica_segments_[i].channels.r) ||
+					ImGui::Checkbox("G", &m_harmonica_segments_[i].channels.g) ||
+					ImGui::Checkbox("B", &m_harmonica_segments_[i].channels.b))
+				{
+					m_harmonica_segments_[i].color_mul_changed = true;
+					color_muls_changed = true;
+				}
+				
+				// File name
 				ImGui::TableNextColumn();
 				ImGui::Text(m_harmonica_segments_[i].file_name.c_str());
+
+				ImGui::PopID();
 			}
 			ImGui::EndTable();
 
@@ -455,24 +481,44 @@ void learning_proj_app::recalc_harmonica(const bool update_colors_only)
 		gl::draw(gl::Texture2d::create(text.render()), text_loc);
 	}
 	else {
-		m_shader_color_mul_->bind();
-		m_shader_color_mul_->uniform("uTex0", 0);
-		m_shader_color_mul_->uniform("uWindowOrigin", vec2(getWindowPos()));
-		m_shader_color_mul_->uniform("uWindowSize", vec2(getWindowSize()));
-
-		const float segment_width = harmonica_buffer_size.x / m_harmonica_segments_.size();
-
 		// I decided not to use a shader to combine images, but to draw them side by side separately.
 		// This also enables to update a single segment, without redrawing the entire buffer.
+		
+		const float segment_width = harmonica_buffer_size.x / m_harmonica_segments_.size();
 		for (int i = 0; i < m_harmonica_segments_.size(); i++) {
-			if (update_colors_only && !m_harmonica_segments_[i].color_mul_changed)
+			harmonica_segment_group& segment = m_harmonica_segments_[i];
+			if (update_colors_only && !segment.color_mul_changed)
 				continue;
 
+			const int channel_count = segment.channels.r + segment.channels.g + segment.channels.b;
+			if (channel_count == 1) {
+				// Render single channel as greyscale.
+				int channel_index = segment.channels.r ? 0 : segment.channels.g ? 1 : 2;
+				m_shader_channel_greyscale_->bind();
+				m_shader_channel_greyscale_->uniform("channelIndex", channel_index);
+			}
+			else {
+				// Render two or three channels.
+				ColorA color_mul = segment.color_mul;
+				if (channel_count == 2)
+				{
+					if (!segment.channels.r)
+						color_mul *= ColorA(0.0f, 1.0f, 1.0f, 1.0f);
+					else if (!segment.channels.g)
+						color_mul *= ColorA(1.0f, 0.0f, 1.0f, 1.0f);
+					else if (!segment.channels.g)
+						color_mul *= ColorA(1.0f, 1.0f, 0.0f, 1.0f);
+				}
+
+				m_shader_color_mul_->bind();
+				m_shader_color_mul_->uniform("colorMul", color_mul);
+			}
+
+			m_shader_color_mul_->uniform("uTex0", 0);
 			Rectf segment_rect(segment_width * i, window_size.y - harmonica_buffer_size.y, segment_width * (i + 1), window_size.y);
-			m_shader_color_mul_->uniform("colorMul", m_harmonica_segments_[i].color_mul);
-			m_harmonica_segments_[i].texture->bind(0);
+			segment.texture->bind(0);
 			gl::drawSolidRect(segment_rect);
-			m_harmonica_segments_[i].color_mul_changed = false;
+			segment.color_mul_changed = false;
 		}
 	}
 	
