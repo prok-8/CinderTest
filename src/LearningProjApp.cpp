@@ -58,13 +58,18 @@ private:
 
 	std::vector<std::string> m_harmonica_images_;
 	std::vector<gl::Texture2dRef> m_harmonica_textures_;
+	std::vector<Color> m_harmonica_color_muls_;
+	std::vector<bool> m_harmonica_color_mul_changes_;
+	bool m_harmonica_schedule_recalc;
+	bool m_harmonica_recalc_updated_colors_only;
 	gl::FboRef m_harmonica_fb_;
 
 	void write_shapes_json();
 	config_load_status read_shapes_json();
 	void draw_main();
 	void draw_harmonica();
-	void update_harmonica();
+	void recalc_harmonica(bool update_colors_only);
+	void schedule_harmonica_recalc(bool update_colors_only);
 	void draw_shape_property_menus();
 	void draw_harmonica_menus();
 };
@@ -85,7 +90,9 @@ learning_proj_app::learning_proj_app() :
 		&m_square_prop_,
 		&m_rectangle_prop_,
 	},
-	m_selected_shape_index_(-1)
+	m_selected_shape_index_(-1),
+	m_harmonica_schedule_recalc(false),
+	m_harmonica_recalc_updated_colors_only(false)
 {
 }
 
@@ -190,7 +197,7 @@ void learning_proj_app::setup()
 	new_window->setUserData(new window_user_data{ HARMONICA });
 
 	m_harmonica_fb_ = gl::Fbo::create(harmonica_buffer_size.x, harmonica_buffer_size.y);
-	update_harmonica();
+	recalc_harmonica(false);
 
 	try
 	{
@@ -235,63 +242,75 @@ void learning_proj_app::draw_shape_property_menus()
 		ImGui::EndMainMenuBar();
 	}
 
-	ImGui::Begin("List");
-	ImGui::ListBox(
-		"",
-		&m_selected_shape_index_,
-		[](void* data, const int idx, const char** out_text)
-		{
-			*out_text = static_cast<shape_property_group**>(data)[idx]->name;
-			return true;
-		},
-		m_property_groups_.data(),
-			m_property_groups_.size());
+	if (ImGui::Begin("List"))	{
+		ImGui::ListBox(
+			"",
+			&m_selected_shape_index_,
+			[](void* data, const int idx, const char** out_text)
+			{
+				*out_text = static_cast<shape_property_group**>(data)[idx]->name;
+				return true;
+			},
+			m_property_groups_.data(),
+				m_property_groups_.size());
+	}
+	
 	ImGui::End();
 
-	ImGui::Begin("Properties");
-	if (m_selected_shape_index_ >= 0) {
-		m_property_groups_[m_selected_shape_index_]->draw();
+	if (ImGui::Begin("Properties"))	{
+		if (m_selected_shape_index_ >= 0) {
+			m_property_groups_[m_selected_shape_index_]->draw();
+		}
 	}
 	ImGui::End();
 
 	if (m_dialog_message_ != nullptr)
 	{
-		ImGui::Begin("Alert");
-		ImGui::Text(m_dialog_message_);
-		if (ImGui::Button("Close"))
-			m_dialog_message_ = nullptr;
+		if (ImGui::Begin("Alert")) {
+			ImGui::Text(m_dialog_message_);
+			if (ImGui::Button("Close"))
+				m_dialog_message_ = nullptr;
+		}
 		ImGui::End();
 	}
 }
 
 void learning_proj_app::draw_harmonica_menus()
 {
-	ImGui::Begin("Harmonica");
-	
-	
-	if (ImGui::BeginTable("Images", 3))
-	{
-		ImGui::TableSetupColumn("Image", ImGuiTableColumnFlags_WidthFixed, 64);
-		ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 128);
-		ImGui::TableSetupColumn("Col3", 0);
-		ImGui::TableHeadersRow();
+	bool color_muls_changed = false;
+	if (ImGui::Begin("Harmonica")) {
+		if (ImGui::BeginTable("Images", 3)) {
+			ImGui::TableSetupColumn("Image", ImGuiTableColumnFlags_WidthFixed, 64);
+			ImGui::TableSetupColumn("Color", ImGuiTableColumnFlags_WidthFixed, 136);
+			ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableHeadersRow();
 
-		for (int i = 0; i < m_harmonica_images_.size(); i++)
-		{
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::Image(m_harmonica_textures_[i], vec2(64, 64));
-			ImGui::TableNextColumn();
-			ImGui::Text(m_harmonica_images_[i].c_str());
-			ImGui::TableNextColumn();
-			ImGui::Text("Tint");
+			for (int i = 0; i < m_harmonica_images_.size(); i++) {
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::Image(m_harmonica_textures_[i], vec2(64, 64));
+				ImGui::TableNextColumn();
+				if (ImGui::ColorPicker3(
+					"MulColor" + i,
+					&m_harmonica_color_muls_[i],
+					ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoSmallPreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel))
+				{
+					m_harmonica_color_mul_changes_[i] = true;
+					color_muls_changed = true;
+				}
+				ImGui::TableNextColumn();
+				ImGui::Text(m_harmonica_images_[i].c_str());
+			}
+			ImGui::EndTable();
+
+			if (color_muls_changed)
+				// Recalculating harmonica fbo here doesn't affect the final rendered image. I don't understand why.
+				schedule_harmonica_recalc(true);
 		}
-		ImGui::EndTable();
+
+		ImGui::End();
 	}
-
-	ImGui::End();
 }
-
 
 void learning_proj_app::fileDrop(FileDropEvent event)
 {
@@ -300,10 +319,12 @@ void learning_proj_app::fileDrop(FileDropEvent event)
 	case MAIN:
 		break;
 	case HARMONICA:
-		std::string file_name = event.getFile(0).string();
+		const std::string file_name = event.getFile(0).string();
 		m_harmonica_images_.push_back(file_name);
 		m_harmonica_textures_.push_back(gl::Texture::create(loadImage(file_name)));
-		update_harmonica();
+		m_harmonica_color_muls_.push_back(Color::white());
+		m_harmonica_color_mul_changes_.push_back(false);
+		recalc_harmonica(false);
 		break;
 	}
 }
@@ -413,18 +434,22 @@ void learning_proj_app::draw_main()
 
 void learning_proj_app::draw_harmonica()
 {
+	if (m_harmonica_schedule_recalc) {
+		recalc_harmonica(m_harmonica_recalc_updated_colors_only);
+		m_harmonica_schedule_recalc = false;
+	}
+	
 	if (m_harmonica_fb_) {
 		const Rectf render_rect = Rectf(vec2(0.0f, 0.0f), harmonica_buffer_size).getCenteredFit(getWindowBounds(), true);
 		gl::draw(m_harmonica_fb_->getColorTexture(), render_rect);
 	}
 }
 
-void learning_proj_app::update_harmonica()
+void learning_proj_app::recalc_harmonica(bool update_colors_only)
 {
 	m_harmonica_fb_->bindFramebuffer();
 	const vec2 window_size = getWindowSize();
-	if (m_harmonica_textures_.size() == 0)
-	{
+	if (m_harmonica_textures_.size() == 0) {
 		gl::setMatricesWindow(window_size);
 		gl::clear(Color::gray(0.1f));
 		TextBox text = TextBox().text("[ DROP IMAGES HERE ]").color(Color::white()).font(Font("Calibri", 50)).size(1000, 1000);
@@ -437,21 +462,29 @@ void learning_proj_app::update_harmonica()
 		m_shader_color_mul_->uniform("uTex0", 0);
 		m_shader_color_mul_->uniform("uWindowOrigin", vec2(getWindowPos()));
 		m_shader_color_mul_->uniform("uWindowSize", vec2(getWindowSize()));
-		m_shader_color_mul_->uniform("colorMul", vec4(1.0f, 0.5f, 0.0f, 1.0f));
-		
+
 		const float segment_width = harmonica_buffer_size.x / m_harmonica_textures_.size();
-		Rectf segment_rect = Rectf(0.0f, window_size.y - harmonica_buffer_size.y, segment_width, window_size.y);
-		
-		for (int i = 0; i < m_harmonica_images_.size(); i++)
-		{
+		for (int i = 0; i < m_harmonica_images_.size(); i++) {
+			if (update_colors_only && !m_harmonica_color_mul_changes_[i])
+				continue;
+
+			Rectf segment_rect(segment_width * i, window_size.y - harmonica_buffer_size.y, segment_width * (i + 1), window_size.y);
+			m_shader_color_mul_->uniform("colorMul", ColorA(m_harmonica_color_muls_[i], 1.0f));
 			m_harmonica_textures_[i]->bind(0);
 			gl::drawSolidRect(segment_rect);
-			segment_rect.offset(vec2(segment_width, 0.0f));
+			m_harmonica_color_mul_changes_[i] = false;
 		}
 	}
 	
 	m_harmonica_fb_->unbindFramebuffer();
 }
+
+void learning_proj_app::schedule_harmonica_recalc(bool update_colors_only)
+{
+	m_harmonica_schedule_recalc = true;
+	m_harmonica_recalc_updated_colors_only = update_colors_only;
+}
+
 
 // This line tells Cinder to actually create and run the application.
 CINDER_APP(learning_proj_app, RendererGl, prepare_settings)
